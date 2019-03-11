@@ -4,6 +4,8 @@
 
 using namespace l1tpf_impl;
 
+
+
 PUAlgoBase::PUAlgoBase( const edm::ParameterSet & iConfig ) :
     debug_(iConfig.getUntrackedParameter<int>("debug", 0)),
     etaCharged_(iConfig.getParameter<double>("etaCharged")),
@@ -25,7 +27,7 @@ void PUAlgoBase::runChargedPV(Region &r, float z0) const {
     }
 }
 
-void PUAlgoBase::doVertexing(std::vector<Region> &rs, VertexAlgo algo, float &pvdz) const {
+void PUAlgoBase::doVertexing(std::vector<Region> &rs, VertexAlgo algo, float &pvdz, unsigned int vtxNum) const {
     int lNBins = int(40./vtxRes_);
     if (algo == TPVtxAlgo) lNBins *= 3;
     std::unique_ptr<TH1F> h_dz(new TH1F("h_dz","h_dz",lNBins,-20,20));
@@ -39,19 +41,24 @@ void PUAlgoBase::doVertexing(std::vector<Region> &rs, VertexAlgo algo, float &pv
         }
       }
     }
+    std::vector<std::pair<float,float>> vtxVec;
     switch(algo) {
         case ExternalVtxAlgo: break;
         case OldVtxAlgo: {
-                             int imaxbin = h_dz->GetMaximumBin();
-                             pvdz = h_dz->GetXaxis()->GetBinCenter(imaxbin);
+                             std::vector<int> bins;
+                             for (int ib = 1; ib <= h_dz->GetNbinsX(); ib++) {bins.push_back(h_dz->GetBinContent(ib));}
+                             std::sort(bins.begin(), bins.end());
+                             if (vtxNum >= bins.size()) pvdz = -999999.;
+                             else pvdz = h_dz->GetXaxis()->GetBinCenter(bins[(bins.size()-1)-vtxNum]);
                          }; break;
         case TPVtxAlgo: {
-                            float max = 0; int bmax = -1;
                             for (int b = 1; b <= lNBins; ++b) {
                                 float sum3 = h_dz->GetBinContent(b) + h_dz->GetBinContent(b+1) + h_dz->GetBinContent(b-1);
-                                if (bmax == -1 || sum3 > max) { max = sum3; bmax = b; }
+                                vtxVec.push_back(std::make_pair(sum3,h_dz->GetXaxis()->GetBinCenter(b)));
                             }
-                            pvdz = h_dz->GetXaxis()->GetBinCenter(bmax); 
+                            std::sort(vtxVec.begin(),vtxVec.end(), vtxSort);
+                            if (int(vtxNum) >= lNBins) pvdz = -999999.;
+                            else pvdz = vtxVec[vtxNum].second;
                         }; break;
     }
     int16_t iZ0 = round(pvdz * InputTrack::Z0_SCALE);

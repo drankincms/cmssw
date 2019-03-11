@@ -22,6 +22,7 @@ l1pfProducer = cms.EDProducer("L1TPFProducer",
      puppiUsingBareTracks = cms.bool(False), # use PF
      vtxRes      = cms.double(0.333),
      vtxAlgo     = cms.string("TP"),
+     vtxNum      = cms.untracked.uint32(0),
      vtxAdaptiveCut = cms.bool(True),
      pfAlgo = cms.string("PFAlgo3"),
      puAlgo = cms.string("Puppi"),

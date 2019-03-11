@@ -13,7 +13,7 @@ namespace l1tpf_impl {
 
         /// global operations
         enum VertexAlgo { OldVtxAlgo, TPVtxAlgo, ExternalVtxAlgo };
-        virtual void doVertexing(std::vector<Region> &rs, VertexAlgo algo, float &vz) const ; // region is not const since it sets the fromPV bit of the tracks
+        virtual void doVertexing(std::vector<Region> &rs, VertexAlgo algo, float &vz, unsigned int vtxNum) const ; // region is not const since it sets the fromPV bit of the tracks
 
         virtual void runChargedPV(Region &r, float z0) const ;
         
@@ -25,6 +25,7 @@ namespace l1tpf_impl {
         int debug_;
         float etaCharged_, vtxRes_;
         bool vtxAdaptiveCut_; 
+        static bool vtxSort(std::pair<float,float> i, std::pair<float,float> j) { return i.first > j.first; }
   };
 
 } // end namespace

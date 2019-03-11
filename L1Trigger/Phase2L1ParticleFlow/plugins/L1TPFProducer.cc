@@ -36,6 +36,7 @@ class L1TPFProducer : public edm::stream::EDProducer<> {
         unsigned trkMinStubs_;
         l1tpf_impl::PUAlgoBase::VertexAlgo vtxAlgo_;  
         edm::EDGetTokenT<std::vector<l1t::Vertex>> extVtx_;
+        unsigned int vtxNum_;
 
         edm::EDGetTokenT<l1t::MuonBxCollection> muCands_;
 
@@ -50,6 +51,7 @@ class L1TPFProducer : public edm::stream::EDProducer<> {
 
         // region of interest debugging
         float debugEta_, debugPhi_, debugR_;
+        static bool vtxSort(std::pair<float,float> i, std::pair<float,float> j) { return i.first > j.first; }
 
         virtual void produce(edm::Event&, const edm::EventSetup&) override;
 };
@@ -64,6 +66,7 @@ L1TPFProducer::L1TPFProducer(const edm::ParameterSet& iConfig):
     trkPt_(iConfig.getParameter<double>("trkPtCut")),
     trkMaxChi2_(iConfig.getParameter<double>("trkMaxChi2")),
     trkMinStubs_(iConfig.getParameter<unsigned>("trkMinStubs")),
+    vtxNum_(iConfig.getUntrackedParameter<unsigned int>("vtxNum",0)),
     muCands_(consumes<l1t::MuonBxCollection>(iConfig.getParameter<edm::InputTag>("muons"))),
     emPtCut_(iConfig.getParameter<double>("emPtCut")),
     hadPtCut_(iConfig.getParameter<double>("hadPtCut")),
@@ -182,14 +185,17 @@ L1TPFProducer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
         edm::Handle<std::vector<l1t::Vertex>> vtxHandle;
         iEvent.getByToken(extVtx_, vtxHandle);
         z0 = 0;
-        double ptsum = 0;
+        std::vector<std::pair<float,float>> vtxVec;
         for (const l1t::Vertex & vtx : *vtxHandle) {
             double myptsum = 0; 
             for (const auto & tkptr : vtx.tracks()) { myptsum += std::min(tkptr->getMomentum(4).perp(), 50.f); }
-            if (myptsum > ptsum) { z0 = vtx.z0(); ptsum = myptsum; }
+            vtxVec.push_back(std::make_pair(myptsum,vtx.z0()));
         }
+        std::sort(vtxVec.begin(),vtxVec.end(), vtxSort);
+        if (vtxNum_ >= vtxVec.size()) {z0 = -999999.;}
+        else {z0 = vtxVec[vtxNum_].second;}
     }
-    l1pualgo_->doVertexing(l1regions_.regions(), vtxAlgo_, z0);
+    l1pualgo_->doVertexing(l1regions_.regions(), vtxAlgo_, z0, vtxNum_);
     iEvent.put(std::make_unique<float>(z0), "z0");
 
     // Then also save the tracks with a vertex cut
