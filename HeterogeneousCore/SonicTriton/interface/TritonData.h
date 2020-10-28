@@ -4,6 +4,8 @@
 #include "FWCore/Utilities/interface/Exception.h"
 #include "FWCore/Utilities/interface/Span.h"
 
+#include "HeterogeneousCore/SonicTriton/interface/TritonConverterBase.h"
+
 #include <vector>
 #include <string>
 #include <unordered_map>
@@ -27,6 +29,7 @@ public:
   using Result = nvidia::inferenceserver::client::InferContext::Result;
 
   //constructor
+  TritonData(const std::string& name, std::shared_ptr<IO> data, const edm::ParameterSet& conf);
   TritonData(const std::string& name, std::shared_ptr<IO> data);
 
   //some members can be modified
@@ -34,6 +37,14 @@ public:
   void reset();
   void setBatchSize(unsigned bsize) { batchSize_ = bsize; }
   void setResult(std::unique_ptr<Result> result) { result_ = std::move(result); }
+
+  void setConverterParams(const edm::ParameterSet& conf) {
+    converterConf_ = conf;
+    converterName_ = conf.getParameter<std::string>("converterName");
+  }
+
+  template<typename DT>
+  std::unique_ptr<TritonConverterBase<DT>> createConverter();
 
   //io accessors
   template <typename DT>
@@ -76,6 +87,8 @@ private:
   unsigned batchSize_;
   std::any holder_;
   std::unique_ptr<Result> result_;
+  edm::ParameterSet converterConf_;
+  std::string converterName_;
 };
 
 using TritonInputData = TritonData<nvidia::inferenceserver::client::InferContext::Input>;
@@ -84,6 +97,9 @@ using TritonOutputData = TritonData<nvidia::inferenceserver::client::InferContex
 using TritonOutputMap = std::unordered_map<std::string, TritonOutputData>;
 
 //avoid "explicit specialization after instantiation" error
+template <>
+template <typename DT>
+std::unique_ptr<TritonConverterBase<DT>> TritonInputData::createConverter();
 template <>
 template <typename DT>
 void TritonInputData::toServer(std::shared_ptr<TritonInput<DT>> ptr);

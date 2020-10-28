@@ -58,6 +58,8 @@ TritonClient::TritonClient(const edm::ParameterSet& params)
   if (!msg_str.empty())
     throw cms::Exception("ModelErrors") << msg_str;
 
+
+  const edm::ParameterSet converterDefs = params.getParameterSet("converterDefinition");
   //setup input map
   std::stringstream io_msg;
   if (verbose_)
@@ -67,6 +69,7 @@ TritonClient::TritonClient(const edm::ParameterSet& params)
     const auto& iname = nicInput->Name();
     const auto& curr_itr =
         input_.emplace(std::piecewise_construct, std::forward_as_tuple(iname), std::forward_as_tuple(iname, nicInput));
+    curr_itr.first->second.setConverterParams(converterDefs);
     if (verbose_) {
       const auto& curr_input = curr_itr.first->second;
       io_msg << "  " << iname << " (" << curr_input.dname() << ", " << curr_input.byteSize()
@@ -136,6 +139,7 @@ TritonClient::TritonClient(const edm::ParameterSet& params)
   }
   if (!has_server)
     serverCtx_ = nullptr;
+
 }
 
 bool TritonClient::setBatchSize(unsigned bsize) {
@@ -360,10 +364,14 @@ ni::ModelStatus TritonClient::getServerSideStatus() const {
 
 //for fillDescriptions
 void TritonClient::fillPSetDescription(edm::ParameterSetDescription& iDesc) {
+  edm::ParameterSetDescription descConverter;
+  fillBasePSetDescription(descConverter);
+  descConverter.add<std::string>("converterName");
   edm::ParameterSetDescription descClient;
   fillBasePSetDescription(descClient);
   descClient.add<std::string>("modelName");
   descClient.add<int>("modelVersion", -1);
+  descClient.add<edm::ParameterSetDescription>("converterDefinition", descConverter);
   //server parameters should not affect the physics results
   descClient.addUntracked<unsigned>("batchSize");
   descClient.addUntracked<std::string>("address");

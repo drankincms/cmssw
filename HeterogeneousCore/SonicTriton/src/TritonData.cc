@@ -1,5 +1,6 @@
 #include "HeterogeneousCore/SonicTriton/interface/TritonData.h"
 #include "HeterogeneousCore/SonicTriton/interface/triton_utils.h"
+#include "HeterogeneousCore/SonicTriton/interface/TritonConverterBase.h"
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
 #include "model_config.pb.h"
 
@@ -35,6 +36,12 @@ TritonData<IO>::TritonData(const std::string& name, std::shared_ptr<IO> data)
   byteSize_ = ni::GetDataTypeByteSize(dtype_);
 }
 
+template <>
+template<typename DT>
+std::unique_ptr<TritonConverterBase<DT>> TritonInputData::createConverter() {
+  return TritonConverterFactory<DT>::get()->create(converterName_,converterConf_);
+}
+
 //io accessors
 template <>
 template <typename DT>
@@ -63,9 +70,12 @@ void TritonInputData::toServer(std::shared_ptr<TritonInput<DT>> ptr) {
                                             << " (should be " << byteSize_ << " for " << dname_ << ")";
 
   int64_t nInput = sizeShape();
+
+  std::unique_ptr<TritonConverterBase<DT>> converter = this->createConverter<DT>(); 
+
   for (unsigned i0 = 0; i0 < batchSize_; ++i0) {
     const DT* arr = data_in[i0].data();
-    triton_utils::throwIfError(data_->SetRaw(reinterpret_cast<const uint8_t*>(arr), nInput * byteSize_),
+    triton_utils::throwIfError(data_->SetRaw(converter->convert(arr), nInput * byteSize_),
                                name_ + " input(): unable to set data for batch entry " + std::to_string(i0));
   }
 
@@ -129,6 +139,9 @@ void TritonOutputData::reset() {
 //explicit template instantiation declarations
 template class TritonData<nic::InferContext::Input>;
 template class TritonData<nic::InferContext::Output>;
+
+template std::unique_ptr<TritonConverterBase<float>> TritonInputData::createConverter();
+template std::unique_ptr<TritonConverterBase<int64_t>> TritonInputData::createConverter();
 
 template void TritonInputData::toServer(std::shared_ptr<TritonInput<float>> data_in);
 template void TritonInputData::toServer(std::shared_ptr<TritonInput<int64_t>> data_in);
