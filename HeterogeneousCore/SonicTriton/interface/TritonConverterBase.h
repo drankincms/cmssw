@@ -14,7 +14,7 @@ public:
   virtual ~TritonConverterBase() = default;
   TritonConverterBase& operator=(const TritonConverterBase&) = delete;
 
-  virtual uint8_t* convert(const DT* in) const = 0;
+  virtual const uint8_t* convert(const DT* in) = 0;
 
   const std::string& name() const { return _converterName; }
 
@@ -23,6 +23,7 @@ private:
 };
 
 #include "FWCore/PluginManager/interface/PluginFactory.h"
+
 template <typename DT>
 using TritonConverterFactory = edmplugin::PluginFactory<TritonConverterBase<DT>*(const edm::ParameterSet&)>;
 

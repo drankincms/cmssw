@@ -13,7 +13,7 @@
 #include <algorithm>
 #include <memory>
 #include <any>
-
+ 
 #include "request_grpc.h"
 
 //aliases for local input and output types
@@ -29,7 +29,6 @@ public:
   using Result = nvidia::inferenceserver::client::InferContext::Result;
 
   //constructor
-  TritonData(const std::string& name, std::shared_ptr<IO> data, const edm::ParameterSet& conf);
   TritonData(const std::string& name, std::shared_ptr<IO> data);
 
   //some members can be modified

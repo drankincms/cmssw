@@ -3,4 +3,6 @@
 <use name="FWCore/Framework"/>
 <use name="HeterogeneousCore/SonicCore"/>
 <use name="HeterogeneousCore/SonicTriton"/>
+<use name="triton-inference-server"/>
+<use name="protobuf"/>
 <library file="*.cc" name="testHeterogenousCoreSonicTriton"/>

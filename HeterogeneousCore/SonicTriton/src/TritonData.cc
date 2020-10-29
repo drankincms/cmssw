@@ -2,6 +2,7 @@
 #include "HeterogeneousCore/SonicTriton/interface/triton_utils.h"
 #include "HeterogeneousCore/SonicTriton/interface/TritonConverterBase.h"
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
+#include "FWCore/PluginManager/interface/PluginFactory.h"
 #include "model_config.pb.h"
 
 #include <cstring>
