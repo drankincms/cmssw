@@ -10,6 +10,7 @@
 <use name="CondFormats/DataRecord"/>
 <use name="CondFormats/L1TObjects"/>
 <use name="L1Trigger/GlobalTriggerAnalyzer"/>
+<use name="L1Trigger/Phase2L1ParticleFlow"/>
 <use name="TrackingTools/TransientTrack"/>
 <use name="TrackingTools/TrajectoryState"/>
 <use name="HLTrigger/HLTcore"/>
