@@ -39,7 +39,13 @@ TritonData<IO>::TritonData(const std::string& name, std::shared_ptr<IO> data)
 
 template <>
 template<typename DT>
-std::unique_ptr<TritonConverterBase<DT>> TritonInputData::createConverter() {
+std::unique_ptr<TritonConverterBase<DT>> TritonInputData::createConverter() const {
+  return TritonConverterFactory<DT>::get()->create(converterName_,converterConf_);
+}
+
+template <>
+template<typename DT>
+std::unique_ptr<TritonConverterBase<DT>> TritonOutputData::createConverter() const {
   return TritonConverterFactory<DT>::get()->create(converterName_,converterConf_);
 }
 
@@ -66,17 +72,17 @@ void TritonInputData::toServer(std::shared_ptr<TritonInput<DT>> ptr) {
     }
   }
 
-  if (byteSize_ != sizeof(DT))
-    throw cms::Exception("TritonDataError") << name_ << " input(): inconsistent byte size " << sizeof(DT)
+  std::unique_ptr<TritonConverterBase<DT>> converter = createConverter<DT>(); 
+
+  if (byteSize_ != converter->getByteSize())
+    throw cms::Exception("TritonDataError") << name_ << " input(): inconsistent byte size " << converter->getByteSize()
                                             << " (should be " << byteSize_ << " for " << dname_ << ")";
 
   int64_t nInput = sizeShape();
 
-  std::unique_ptr<TritonConverterBase<DT>> converter = this->createConverter<DT>(); 
-
   for (unsigned i0 = 0; i0 < batchSize_; ++i0) {
     const DT* arr = data_in[i0].data();
-    triton_utils::throwIfError(data_->SetRaw(converter->convert(arr), nInput * byteSize_),
+    triton_utils::throwIfError(data_->SetRaw(converter->convertIn(arr), nInput * byteSize_),
                                name_ + " input(): unable to set data for batch entry " + std::to_string(i0));
   }
 
@@ -100,6 +106,8 @@ TritonOutput<DT> TritonOutputData::fromServer() const {
     }
   }
 
+  std::unique_ptr<TritonConverterBase<DT>> converter = createConverter<DT>(); 
+
   if (byteSize_ != sizeof(DT)) {
     throw cms::Exception("TritonDataError") << name_ << " output(): inconsistent byte size " << sizeof(DT)
                                             << " (should be " << byteSize_ << " for " << dname_ << ")";
@@ -113,11 +121,11 @@ TritonOutput<DT> TritonOutputData::fromServer() const {
     size_t contentByteSize;
     triton_utils::throwIfError(result_->GetRaw(i0, &r0, &contentByteSize),
                                "output(): unable to get raw for entry " + std::to_string(i0));
-    if (contentByteSize != nOutput * byteSize_) {
+    if (contentByteSize != nOutput * converter->getByteSize()) {
       throw cms::Exception("TritonDataError") << name_ << " output(): unexpected content byte size " << contentByteSize
-                                              << " (expected " << nOutput * byteSize_ << ")";
+                                              << " (expected " << nOutput * converter->getByteSize() << ")";
     }
-    const DT* r1 = reinterpret_cast<const DT*>(r0);
+    const DT* r1 = converter->convertOut(r0);
     dataOut.emplace_back(r1, r1 + nOutput);
   }
 
@@ -141,10 +149,13 @@ void TritonOutputData::reset() {
 template class TritonData<nic::InferContext::Input>;
 template class TritonData<nic::InferContext::Output>;
 
-template std::unique_ptr<TritonConverterBase<float>> TritonInputData::createConverter();
-template std::unique_ptr<TritonConverterBase<int64_t>> TritonInputData::createConverter();
-
 template void TritonInputData::toServer(std::shared_ptr<TritonInput<float>> data_in);
 template void TritonInputData::toServer(std::shared_ptr<TritonInput<int64_t>> data_in);
 
 template TritonOutput<float> TritonOutputData::fromServer() const;
+
+template std::unique_ptr<TritonConverterBase<float>> TritonInputData::createConverter() const;
+template std::unique_ptr<TritonConverterBase<int64_t>> TritonInputData::createConverter() const;
+
+template std::unique_ptr<TritonConverterBase<float>> TritonOutputData::createConverter() const;
+template std::unique_ptr<TritonConverterBase<int64_t>> TritonOutputData::createConverter() const;

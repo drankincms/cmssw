@@ -91,6 +91,7 @@ TritonClient::TritonClient(const edm::ParameterSet& params)
       continue;
     const auto& curr_itr = output_.emplace(
         std::piecewise_construct, std::forward_as_tuple(oname), std::forward_as_tuple(oname, nicOutput));
+    curr_itr.first->second.setConverterParams(converterDefs);
     const auto& curr_output = curr_itr.first->second;
     triton_utils::throwIfError(options_->AddRawResult(nicOutput),
                                "TritonClient(): unable to add raw result " + curr_itr.first->first);

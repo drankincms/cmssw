@@ -6,5 +6,6 @@
   <use   name="HeterogeneousCore/SonicTriton"/>
   <use   name="triton-inference-server"/>
   <use   name="protobuf"/>
+  <use   name="hls"/>
   <flags   EDM_PLUGIN="1"/>
 </library>

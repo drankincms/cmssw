@@ -41,9 +41,8 @@ public:
     converterConf_ = conf;
     converterName_ = conf.getParameter<std::string>("converterName");
   }
-
-  template<typename DT>
-  std::unique_ptr<TritonConverterBase<DT>> createConverter();
+  template <typename DT>
+  std::unique_ptr<TritonConverterBase<DT>> createConverter() const;
 
   //io accessors
   template <typename DT>
@@ -98,13 +97,16 @@ using TritonOutputMap = std::unordered_map<std::string, TritonOutputData>;
 //avoid "explicit specialization after instantiation" error
 template <>
 template <typename DT>
-std::unique_ptr<TritonConverterBase<DT>> TritonInputData::createConverter();
-template <>
-template <typename DT>
 void TritonInputData::toServer(std::shared_ptr<TritonInput<DT>> ptr);
 template <>
 template <typename DT>
 TritonOutput<DT> TritonOutputData::fromServer() const;
+template <>
+template <typename DT>
+std::unique_ptr<TritonConverterBase<DT>> TritonOutputData::createConverter() const;
+template <>
+template <typename DT>
+std::unique_ptr<TritonConverterBase<DT>> TritonInputData::createConverter() const;
 template <>
 void TritonInputData::reset();
 template <>

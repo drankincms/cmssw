@@ -9,17 +9,22 @@
 template <typename DT>
 class TritonConverterBase {
 public:
-  TritonConverterBase(const edm::ParameterSet& conf) : _converterName(conf.getParameter<std::string>("converterName")) {}
+  TritonConverterBase(const edm::ParameterSet& conf) : converterName_(conf.getParameter<std::string>("converterName")), byteSize_(sizeof(DT)) {}
+  TritonConverterBase(const edm::ParameterSet& conf, size_t byteSize) : converterName_(conf.getParameter<std::string>("converterName")), byteSize_(byteSize) {}
   TritonConverterBase(const TritonConverterBase&) = delete;
   virtual ~TritonConverterBase() = default;
   TritonConverterBase& operator=(const TritonConverterBase&) = delete;
 
-  virtual const uint8_t* convert(const DT* in) = 0;
+  virtual const uint8_t* convertIn(const DT* in) = 0;
+  virtual const DT* convertOut(const uint8_t* in) = 0;
 
-  const std::string& name() const { return _converterName; }
+  virtual const int64_t getByteSize() const { return byteSize_; }
+
+  const std::string& name() const { return converterName_; }
 
 private:
-  const std::string _converterName;
+  const std::string converterName_;
+  const int64_t byteSize_;
 };
 
 #include "FWCore/PluginManager/interface/PluginFactory.h"
