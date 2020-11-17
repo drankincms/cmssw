@@ -139,8 +139,6 @@ L1TPhase2CorrelatorOffline::L1TPhase2CorrelatorOffline(const edm::ParameterSet& 
       h_L1Puppi_jet_ptratio_vs_pt_ecnotk_(),
       h_L1Puppi_jet_ptratio_vs_pt_hf_(),
       h_L1Puppi_jet_ptratio_vs_eta_() {
-  //h_L1PF_pt_vs_eta_(),
-  //h_L1Puppi_pt_vs_eta_()
   edm::LogInfo("L1TPhase2CorrelatorOffline") << "Constructor "
                                              << "L1TPhase2CorrelatorOffline::L1TPhase2CorrelatorOffline " << std::endl;
 
@@ -162,14 +160,12 @@ L1TPhase2CorrelatorOffline::~L1TPhase2CorrelatorOffline() {
 // -------------------------------------- beginRun --------------------------------------------
 //
 void L1TPhase2CorrelatorOffline::dqmBeginRun(const edm::Run& run, const edm::EventSetup& iSetup)
-// void L1TPhase2CorrelatorOffline::dqmBeginRun(edm::Run const &, edm::EventSetup const &)
 {
   edm::LogInfo("L1TPhase2CorrelatorOffline") << "L1TPhase2CorrelatorOffline::beginRun" << std::endl;
 
   edm::ESHandle<MagneticField> magneticField;
   iSetup.get<IdealMagneticFieldRecord>().get(magneticField);
   bZ_ = magneticField->inTesla(GlobalPoint(0, 0, 0)).z();
-  //bZ_ = 3.8112; // avoid loading the event setup
 }
 
 //
@@ -222,7 +218,6 @@ void L1TPhase2CorrelatorOffline::analyze(edm::Event const& e, edm::EventSetup co
     return;
   }
 
-  //eSetup.get<IdealMagneticFieldRecord>().get(m_BField);
   for (const reco::GenJet& j : *genjets) {
     bool ok = true;
     const reco::Candidate* match = nullptr;
@@ -303,15 +298,6 @@ void L1TPhase2CorrelatorOffline::analyze(edm::Event const& e, edm::EventSetup co
       recopair.second.fill(recopair.first.objects(),
                            recopair.first.prop() ? mc_.caloeta : mc_.eta,
                            recopair.first.prop() ? mc_.calophi : mc_.phi);
-
-      /*std::cout<<"--------------"<<std::endl;
-      std::cout<<"MC"<<std::endl;
-      std::cout<<"\tpt"<<mc_.pt<<std::endl;
-      std::cout<<"\teta"<<mc_.eta<<std::endl;
-      std::cout<<recopair.first.name()<<std::endl;
-      std::cout<<"\tpt02 "<<recopair.second.pt02<<std::endl;
-      std::cout<<"\tpt "<<recopair.second.pt<<std::endl;
-      std::cout<<"\tptbest "<<recopair.second.ptbest<<std::endl;*/
 
       if (abs(mc_.id) == 11 && fabs(mc_.iso04) < 0.05) {
         if (recopair.first.name() == "L1PF") {
@@ -1652,10 +1638,6 @@ void L1TPhase2CorrelatorOffline::bookPhase2CorrelatorHistos(DQMStore::IBooker& i
                                                          resVsPtDef.xmin,
                                                          resVsPtDef.xmax);
 
-  //h_L1PF_electron_resolution_0p2_eta_ = ibooker.book1D("L1PFElectronResolution0p2VsEta",
-  //                                      "L1 PF Electron Resolution (#Delta R < 0.2) vs #eta",
-  //                                      resVsEtaDef.nbinsX, resVsEtaDef.xmin, resVsEtaDef.xmax);
-
   h_L1Puppi_electron_resolution_0p2_pt_barrel_ =
       ibooker.book1D("L1PUPPIElectronResolution0p2VsPtBarrel",
                      "L1 PUPPI Electron Resolution (#Delta R < 0.2) vs p_{T}, Barrel",
@@ -1684,10 +1666,6 @@ void L1TPhase2CorrelatorOffline::bookPhase2CorrelatorHistos(DQMStore::IBooker& i
                      resVsPtDef.xmin,
                      resVsPtDef.xmax);
 
-  //h_L1Puppi_electron_resolution_0p2_eta_ = ibooker.book1D("L1PUPPIElectronResolution0p2VsEta",
-  //                                      "L1 PUPPI Electron Resolution (#Delta R < 0.2) vs #eta",
-  //                                      resVsEtaDef.nbinsX, resVsEtaDef.xmin, resVsEtaDef.xmax);
-
   h_L1PF_electron_resolution_best_pt_barrel_ = ibooker.book1D("L1PFElectronResolutionBestVsPtBarrel",
                                                               "L1 PF Electron Resolution (Best) vs p_{T}, Barrel",
                                                               resVsPtDef.nbinsX,
@@ -1711,10 +1689,6 @@ void L1TPhase2CorrelatorOffline::bookPhase2CorrelatorHistos(DQMStore::IBooker& i
                                                           resVsPtDef.nbinsX,
                                                           resVsPtDef.xmin,
                                                           resVsPtDef.xmax);
-
-  //h_L1PF_electron_resolution_best_eta_ = ibooker.book1D("L1PFElectronResolutionBestVsEta",
-  //                                      "L1 PF Electron Resolution (Best) vs #eta",
-  //                                      resVsEtaDef.nbinsX, resVsEtaDef.xmin, resVsEtaDef.xmax);
 
   h_L1Puppi_electron_resolution_best_pt_barrel_ = ibooker.book1D("L1PUPPIElectronResolutionBestVsPtBarrel",
                                                                  "L1 PUPPI Electron Resolution (Best) vs p_{T}, Barrel",
@@ -1741,10 +1715,6 @@ void L1TPhase2CorrelatorOffline::bookPhase2CorrelatorHistos(DQMStore::IBooker& i
                                                              resVsPtDef.xmin,
                                                              resVsPtDef.xmax);
 
-  //h_L1Puppi_electron_resolution_best_eta_ = ibooker.book1D("L1PUPPIElectronResolutionBestVsEta",
-  //                                      "L1 PUPPI Electron Resolution (Best) vs #eta",
-  //                                      resVsEtaDef.nbinsX, resVsEtaDef.xmin, resVsEtaDef.xmax);
-
   h_L1PF_pizero_resolution_0p2_pt_barrel_ = ibooker.book1D("L1PFPi0Resolution0p2VsPtBarrel",
                                                            "L1 PF Pi0 Resolution (#Delta R < 0.2) vs p_{T}, Barrel",
                                                            resVsPtDef.nbinsX,
@@ -1769,10 +1739,6 @@ void L1TPhase2CorrelatorOffline::bookPhase2CorrelatorHistos(DQMStore::IBooker& i
                                                        resVsPtDef.nbinsX,
                                                        resVsPtDef.xmin,
                                                        resVsPtDef.xmax);
-
-  //h_L1PF_pizero_resolution_0p2_eta_ = ibooker.book1D("L1PFPi0Resolution0p2VsEta",
-  //                                      "L1 PF Pi0 Resolution (#Delta R < 0.2) vs #eta",
-  //                                      resVsEtaDef.nbinsX, resVsEtaDef.xmin, resVsEtaDef.xmax);
 
   h_L1Puppi_pizero_resolution_0p2_pt_barrel_ =
       ibooker.book1D("L1PUPPIPi0Resolution0p2VsPtBarrel",
@@ -1801,10 +1767,6 @@ void L1TPhase2CorrelatorOffline::bookPhase2CorrelatorHistos(DQMStore::IBooker& i
                                                           resVsPtDef.xmin,
                                                           resVsPtDef.xmax);
 
-  //h_L1Puppi_pizero_resolution_0p2_eta_ = ibooker.book1D("L1PUPPIPi0Resolution0p2VsEta",
-  //                                      "L1 PUPPI Pi0 Resolution (#Delta R < 0.2) vs #eta",
-  //                                      resVsEtaDef.nbinsX, resVsEtaDef.xmin, resVsEtaDef.xmax);
-
   h_L1PF_pizero_resolution_best_pt_barrel_ = ibooker.book1D("L1PFPi0ResolutionBestVsPtBarrel",
                                                             "L1 PF Pi0 Resolution (Best) vs p_{T}, Barrel",
                                                             resVsPtDef.nbinsX,
@@ -1828,10 +1790,6 @@ void L1TPhase2CorrelatorOffline::bookPhase2CorrelatorHistos(DQMStore::IBooker& i
                                                         resVsPtDef.nbinsX,
                                                         resVsPtDef.xmin,
                                                         resVsPtDef.xmax);
-
-  //h_L1PF_pizero_resolution_best_eta_ = ibooker.book1D("L1PFPi0ResolutionBestVsEta",
-  //                                      "L1 PF Pi0 Resolution (Best) vs #eta",
-  //                                      resVsEtaDef.nbinsX, resVsEtaDef.xmin, resVsEtaDef.xmax);
 
   h_L1Puppi_pizero_resolution_best_pt_barrel_ = ibooker.book1D("L1PUPPIPi0ResolutionBestVsPtBarrel",
                                                                "L1 PUPPI Pi0 Resolution (Best) vs p_{T}, Barrel",
@@ -1857,10 +1815,6 @@ void L1TPhase2CorrelatorOffline::bookPhase2CorrelatorHistos(DQMStore::IBooker& i
                                                            resVsPtDef.xmin,
                                                            resVsPtDef.xmax);
 
-  //h_L1Puppi_pizero_resolution_best_eta_ = ibooker.book1D("L1PUPPIPi0ResolutionBestVsEta",
-  //                                      "L1 PUPPI Pi0 Resolution (Best) vs #eta",
-  //                                      resVsEtaDef.nbinsX, resVsEtaDef.xmin, resVsEtaDef.xmax);
-
   h_L1PF_pion_resolution_0p2_pt_barrel_ = ibooker.book1D("L1PFPionResolution0p2VsPtBarrel",
                                                          "L1 PF Pion Resolution (#Delta R < 0.2) vs p_{T}, Barrel",
                                                          resVsPtDef.nbinsX,
@@ -1885,10 +1839,6 @@ void L1TPhase2CorrelatorOffline::bookPhase2CorrelatorHistos(DQMStore::IBooker& i
                                                      resVsPtDef.nbinsX,
                                                      resVsPtDef.xmin,
                                                      resVsPtDef.xmax);
-
-  //h_L1PF_pion_resolution_0p2_eta_ = ibooker.book1D("L1PFPionResolution0p2VsEta",
-  //                                      "L1 PF Pion Resolution (#Delta R < 0.2) vs #eta",
-  //                                      resVsEtaDef.nbinsX, resVsEtaDef.xmin, resVsEtaDef.xmax);
 
   h_L1Puppi_pion_resolution_0p2_pt_barrel_ =
       ibooker.book1D("L1PUPPIPionResolution0p2VsPtBarrel",
@@ -1917,10 +1867,6 @@ void L1TPhase2CorrelatorOffline::bookPhase2CorrelatorHistos(DQMStore::IBooker& i
                                                         resVsPtDef.xmin,
                                                         resVsPtDef.xmax);
 
-  //h_L1Puppi_pion_resolution_0p2_eta_ = ibooker.book1D("L1PUPPIPionResolution0p2VsEta",
-  //                                      "L1 PUPPI Pion Resolution (#Delta R < 0.2) vs #eta",
-  //                                      resVsEtaDef.nbinsX, resVsEtaDef.xmin, resVsEtaDef.xmax);
-
   h_L1PF_pion_resolution_best_pt_barrel_ = ibooker.book1D("L1PFPionResolutionBestVsPtBarrel",
                                                           "L1 PF Pion Resolution (Best) vs p_{T}, Barrel",
                                                           resVsPtDef.nbinsX,
@@ -1944,10 +1890,6 @@ void L1TPhase2CorrelatorOffline::bookPhase2CorrelatorHistos(DQMStore::IBooker& i
                                                       resVsPtDef.nbinsX,
                                                       resVsPtDef.xmin,
                                                       resVsPtDef.xmax);
-
-  //h_L1PF_pion_resolution_best_eta_ = ibooker.book1D("L1PFPionResolutionBestVsEta",
-  //                                      "L1 PF Pion Resolution (Best) vs #eta",
-  //                                      resVsEtaDef.nbinsX, resVsEtaDef.xmin, resVsEtaDef.xmax);
 
   h_L1Puppi_pion_resolution_best_pt_barrel_ = ibooker.book1D("L1PUPPIPionResolutionBestVsPtBarrel",
                                                              "L1 PUPPI Pion Resolution (Best) vs p_{T}, Barrel",
@@ -1973,10 +1915,6 @@ void L1TPhase2CorrelatorOffline::bookPhase2CorrelatorHistos(DQMStore::IBooker& i
                                                          resVsPtDef.xmin,
                                                          resVsPtDef.xmax);
 
-  //h_L1Puppi_pion_resolution_best_eta_ = ibooker.book1D("L1PUPPIPionResolutionBestVsEta",
-  //                                      "L1 PUPPI Pion Resolution (Best) vs #eta",
-  //                                      resVsEtaDef.nbinsX, resVsEtaDef.xmin, resVsEtaDef.xmax);
-
   h_L1PF_jet_resolution_pt_barrel_ = ibooker.book1D("L1PFJetResolutionVsPtBarrel",
                                                     "L1 PF Jet Resolution vs p_{T}, Barrel",
                                                     resVsPtDef.nbinsX,
@@ -2000,10 +1938,6 @@ void L1TPhase2CorrelatorOffline::bookPhase2CorrelatorHistos(DQMStore::IBooker& i
                                                 resVsPtDef.nbinsX,
                                                 resVsPtDef.xmin,
                                                 resVsPtDef.xmax);
-
-  //h_L1PF_jet_resolution_eta_ = ibooker.book1D("L1PFJetResolutionVsEta",
-  //                                      "L1 PF Jet Resolution vs #eta",
-  //                                      resVsEtaDef.nbinsX, resVsEtaDef.xmin, resVsEtaDef.xmax);
 
   h_L1Puppi_jet_resolution_pt_barrel_ = ibooker.book1D("L1PUPPIJetResolutionVsPtBarrel",
                                                        "L1 PUPPI Jet Resolution vs p_{T}, Barrel",
@@ -2029,10 +1963,6 @@ void L1TPhase2CorrelatorOffline::bookPhase2CorrelatorHistos(DQMStore::IBooker& i
                                                    resVsPtDef.xmin,
                                                    resVsPtDef.xmax);
 
-  //h_L1Puppi_jet_resolution_eta_ = ibooker.book1D("L1PUPPIJetResolutionVsEta",
-  //                                      "L1 PUPPI Jet Resolution vs #eta",
-  //                                      resVsEtaDef.nbinsX, resVsEtaDef.xmin, resVsEtaDef.xmax);
-
   ibooker.cd();
 
   return;
@@ -2043,7 +1973,6 @@ void L1TPhase2CorrelatorOffline::bookPhase2CorrelatorHistos(DQMStore::IBooker& i
 //
 void L1TPhase2CorrelatorOffline::dqmEndRun(const edm::Run& run, const edm::EventSetup& iSetup) {
   computeResponseResolution();
-  //normalise2DHistogramsToBinArea();
 }
 
 void L1TPhase2CorrelatorOffline::computeResponseResolution() {
@@ -2192,72 +2121,72 @@ void L1TPhase2CorrelatorOffline::computeResponseResolution() {
       h_L1PF_electron_resolution_0p2_pt_endcap_,
       h_L1PF_electron_resolution_0p2_pt_ecnotk_,
       h_L1PF_electron_resolution_0p2_pt_hf_,
-      nullptr,  //h_L1PF_electron_resolution_0p2_eta_,
+      nullptr, 
       h_L1Puppi_electron_resolution_0p2_pt_barrel_,
       h_L1Puppi_electron_resolution_0p2_pt_endcap_,
       h_L1Puppi_electron_resolution_0p2_pt_ecnotk_,
       h_L1Puppi_electron_resolution_0p2_pt_hf_,
-      nullptr,  //h_L1Puppi_electron_resolution_0p2_eta_,
+      nullptr, 
       h_L1PF_electron_resolution_best_pt_barrel_,
       h_L1PF_electron_resolution_best_pt_endcap_,
       h_L1PF_electron_resolution_best_pt_ecnotk_,
       h_L1PF_electron_resolution_best_pt_hf_,
-      nullptr,  //h_L1PF_electron_resolution_best_eta_,
+      nullptr, 
       h_L1Puppi_electron_resolution_best_pt_barrel_,
       h_L1Puppi_electron_resolution_best_pt_endcap_,
       h_L1Puppi_electron_resolution_best_pt_ecnotk_,
       h_L1Puppi_electron_resolution_best_pt_hf_,
-      nullptr,  //h_L1Puppi_electron_resolution_best_eta_,
+      nullptr, 
       h_L1PF_pizero_resolution_0p2_pt_barrel_,
       h_L1PF_pizero_resolution_0p2_pt_endcap_,
       h_L1PF_pizero_resolution_0p2_pt_ecnotk_,
       h_L1PF_pizero_resolution_0p2_pt_hf_,
-      nullptr,  //h_L1PF_pizero_resolution_0p2_eta_,
+      nullptr, 
       h_L1Puppi_pizero_resolution_0p2_pt_barrel_,
       h_L1Puppi_pizero_resolution_0p2_pt_endcap_,
       h_L1Puppi_pizero_resolution_0p2_pt_ecnotk_,
       h_L1Puppi_pizero_resolution_0p2_pt_hf_,
-      nullptr,  //h_L1Puppi_pizero_resolution_0p2_eta_,
+      nullptr, 
       h_L1PF_pizero_resolution_best_pt_barrel_,
       h_L1PF_pizero_resolution_best_pt_endcap_,
       h_L1PF_pizero_resolution_best_pt_ecnotk_,
       h_L1PF_pizero_resolution_best_pt_hf_,
-      nullptr,  //h_L1PF_pizero_resolution_best_eta_,
+      nullptr, 
       h_L1Puppi_pizero_resolution_best_pt_barrel_,
       h_L1Puppi_pizero_resolution_best_pt_endcap_,
       h_L1Puppi_pizero_resolution_best_pt_ecnotk_,
       h_L1Puppi_pizero_resolution_best_pt_hf_,
-      nullptr,  //h_L1Puppi_pizero_resolution_best_eta_,
+      nullptr, 
       h_L1PF_pion_resolution_0p2_pt_barrel_,
       h_L1PF_pion_resolution_0p2_pt_endcap_,
       h_L1PF_pion_resolution_0p2_pt_ecnotk_,
       h_L1PF_pion_resolution_0p2_pt_hf_,
-      nullptr,  //h_L1PF_pion_resolution_0p2_eta_,
+      nullptr, 
       h_L1Puppi_pion_resolution_0p2_pt_barrel_,
       h_L1Puppi_pion_resolution_0p2_pt_endcap_,
       h_L1Puppi_pion_resolution_0p2_pt_ecnotk_,
       h_L1Puppi_pion_resolution_0p2_pt_hf_,
-      nullptr,  //h_L1Puppi_pion_resolution_0p2_eta_,
+      nullptr, 
       h_L1PF_pion_resolution_best_pt_barrel_,
       h_L1PF_pion_resolution_best_pt_endcap_,
       h_L1PF_pion_resolution_best_pt_ecnotk_,
       h_L1PF_pion_resolution_best_pt_hf_,
-      nullptr,  //h_L1PF_pion_resolution_best_eta_,
+      nullptr, 
       h_L1Puppi_pion_resolution_best_pt_barrel_,
       h_L1Puppi_pion_resolution_best_pt_endcap_,
       h_L1Puppi_pion_resolution_best_pt_ecnotk_,
       h_L1Puppi_pion_resolution_best_pt_hf_,
-      nullptr,  //h_L1Puppi_pion_resolution_best_eta_,
+      nullptr, 
       h_L1PF_jet_resolution_pt_barrel_,
       h_L1PF_jet_resolution_pt_endcap_,
       h_L1PF_jet_resolution_pt_ecnotk_,
       h_L1PF_jet_resolution_pt_hf_,
-      nullptr,  //h_L1PF_jet_resolution_eta_,
+      nullptr, 
       h_L1Puppi_jet_resolution_pt_barrel_,
       h_L1Puppi_jet_resolution_pt_endcap_,
       h_L1Puppi_jet_resolution_pt_ecnotk_,
       h_L1Puppi_jet_resolution_pt_hf_,
-      nullptr  //h_L1Puppi_jet_resolution_eta_,
+      nullptr 
   };
 
   for (unsigned int i = 0; i < monElementstoComputeIn.size(); i++) {
@@ -2296,7 +2225,6 @@ void L1TPhase2CorrelatorOffline::medianResponseCorrResolution(MonitorElement* in
       TGraph* ptrecgen = new TGraph(h->GetNbinsX());
       for (int ib = 1; ib < h->GetNbinsX() + 1; ib++) {
         float corr = med->GetBinContent(ib);
-        //ptrecgen.push_back(std::make_pair(h->GetXaxis()->GetBinCenter(ib)*corr[ib]),h->GetXaxis()->GetBinCenter(ib));
         float xval = h->GetXaxis()->GetBinCenter(ib);
         ptrecgen->SetPoint(ib - 1, xval * corr, xval);
         hresp->SetBinContent(ib, corr);
@@ -2315,9 +2243,6 @@ void L1TPhase2CorrelatorOffline::medianResponseCorrResolution(MonitorElement* in
         }
       }
       delete ptrecgen;
-      //std::sort(ptrecgen.begin(), ptrecgen.end(), [](std::pair<float,float> a, std::pair<float,float> b) {
-      //  return b.first < b.first;
-      //});
       auto qc = c->QuantilesX(0.5, "_qc");
       auto qhi = c->QuantilesX(0.84, "_qhi");
       auto qlo = c->QuantilesX(0.16, "_qlo");
@@ -2333,19 +2258,5 @@ void L1TPhase2CorrelatorOffline::medianResponseCorrResolution(MonitorElement* in
   }
 }
 
-void L1TPhase2CorrelatorOffline::normalise2DHistogramsToBinArea() {
-  std::vector<MonitorElement*> monElementstoNormalize = {
-      //h_L1PF_pt_vs_eta_,
-  };  //h_L1Puppi_pt_vs_eta_};
-
-  for (auto mon : monElementstoNormalize) {
-    if (mon != nullptr) {
-      auto h = mon->getTH2F();
-      if (h != nullptr) {
-        h->Scale(1, "width");
-      }
-    }
-  }
-}
 // define this as a plug-in
 DEFINE_FWK_MODULE(L1TPhase2CorrelatorOffline);

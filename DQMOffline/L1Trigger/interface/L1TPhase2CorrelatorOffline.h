@@ -73,15 +73,11 @@ private:
   double DistancePhi(const reco::Candidate& c1, const reco::Candidate& c2);
   double calcDeltaPhi(double phi1, double phi2);
 
-  void normalise2DHistogramsToBinArea();
   void computeResponseResolution();
 
   void medianResponseCorrResolution(MonitorElement* in2D, MonitorElement* response, MonitorElement* resolution);
   void medianResponse(MonitorElement* in2D, MonitorElement* response);
 
-  //edm::ESHandle<MagneticField> m_BField;
-
-  //edm::ProcessHistoryID phID_;
   struct SimpleObject {
     float pt, eta, phi;
     SimpleObject(float apt, float aneta, float aphi) : pt(apt), eta(aneta), phi(aphi) {}
@@ -135,21 +131,21 @@ private:
           std::lower_bound(objects.begin(), objects.end(), eta - dr - 0.01f);  // small offset to avoid dealing with ==
       auto end = std::lower_bound(objects.begin(), objects.end(), eta + dr + 0.01f);
       float dr2 = dr * dr;
-      sum04 = 0;
+      sum04_ = 0;
       for (auto it = first; it < end; ++it) {
         float mydr2 = ::deltaR2(eta, phi, it->eta, it->phi);
         if (mydr2 < dr2)
-          ptdr2.emplace_back(it->pt, mydr2);
+          ptdr2_.emplace_back(it->pt, mydr2);
         if (mydr2 < 0.16f)
-          sum04 += it->pt;
+          sum04_ += it->pt;
       }
     }
     float sum(float dr = 0.4) const {
       if (dr == 0.4f)
-        return sum04;
+        return sum04_;
       float dr2 = dr * dr;
       float mysum = 0;
-      for (const auto& p : ptdr2) {
+      for (const auto& p : ptdr2_) {
         if (p.second < dr2)
           mysum += p.first;
       }
@@ -158,7 +154,7 @@ private:
     int number(float dr, float threshold) const {
       float dr2 = dr * dr, absthreshold = sum() * threshold;
       int mysum = 0;
-      for (const auto& p : ptdr2) {
+      for (const auto& p : ptdr2_) {
         if (p.second < dr2 && p.first > absthreshold)
           mysum++;
       }
@@ -166,7 +162,7 @@ private:
     }
     float mindr(float threshold) const {
       float best = 9999, absthreshold = sum() * threshold;
-      for (const auto& p : ptdr2) {
+      for (const auto& p : ptdr2_) {
         if (p.second < best && p.first > absthreshold)
           best = p.second;
       }
@@ -174,7 +170,7 @@ private:
     }
     float nearest() const {
       std::pair<float, float> best(0, 9999);
-      for (const auto& p : ptdr2) {
+      for (const auto& p : ptdr2_) {
         if (p.second < best.second)
           best = p;
       }
@@ -182,7 +178,7 @@ private:
     }
     float max(float dr = 0.4) const {
       float best = 0, dr2 = dr * dr;
-      for (const auto& p : ptdr2) {
+      for (const auto& p : ptdr2_) {
         if (p.first > best && p.second < dr2)
           best = p.first;
       }
@@ -190,8 +186,8 @@ private:
     }
 
   private:
-    std::vector<std::pair<float, float>> ptdr2;
-    float sum04;
+    std::vector<std::pair<float, float>> ptdr2_;
+    float sum04_;
   };
 
   // variables from config file
@@ -211,19 +207,6 @@ private:
     int charge;
     float caloeta, calophi;
     int id;
-    /*void makeBranches(TTree *tree) {
-      tree->Branch("mc_pt", &pt, "mc_pt/F");
-      tree->Branch("mc_pt02", &pt02, "mc_pt02/F");
-      tree->Branch("mc_eta", &eta, "mc_eta/F");
-      tree->Branch("mc_phi", &phi, "mc_phi/F");
-      tree->Branch("mc_iso02", &iso02, "mc_iso02/F");
-      tree->Branch("mc_iso04", &iso04, "mc_iso04/F");
-      tree->Branch("mc_iso08", &iso08, "mc_iso08/F");
-      tree->Branch("mc_id", &id, "mc_id/I");
-      tree->Branch("mc_q", &charge, "mc_q/I");
-      tree->Branch("mc_caloeta", &caloeta, "mc_caloeta/F");
-      tree->Branch("mc_calophi", &calophi, "mc_calophi/F");
-    }*/
     void fillP4(const reco::Candidate& c) {
       pt = c.pt();
       eta = c.eta();
@@ -245,16 +228,6 @@ private:
   struct RecoVars {
     float pt, pt02, pt08, ptbest, pthighest, mindr025;
     int n025, n010;
-    /*void makeBranches(const std::string &prefix, TTree *tree) {
-      tree->Branch((prefix+"_pt").c_str(),   &pt,   (prefix+"_pt/F").c_str());
-      tree->Branch((prefix+"_pt02").c_str(), &pt02, (prefix+"_pt02/F").c_str());
-      tree->Branch((prefix+"_pt08").c_str(), &pt08, (prefix+"_pt08/F").c_str());
-      tree->Branch((prefix+"_ptbest").c_str(), &ptbest, (prefix+"_ptbest/F").c_str());
-      tree->Branch((prefix+"_pthighest").c_str(), &pthighest, (prefix+"_pthighest/F").c_str());
-      tree->Branch((prefix+"_mindr025").c_str(), &mindr025, (prefix+"_mindr025/F").c_str());
-      tree->Branch((prefix+"_n025").c_str(), &n025, (prefix+"_n025/I").c_str());
-      tree->Branch((prefix+"_n010").c_str(), &n010, (prefix+"_n010/I").c_str());
-    }*/
     void fill(const std::vector<SimpleObject>& objects, float eta, float phi) {
       InCone incone(objects, eta, phi, 0.8);
       pt = incone.sum();
@@ -278,9 +251,7 @@ private:
     }
   };
   std::vector<std::pair<MultiCollection, RecoVars>> reco_;
-  //std::vector<std::pair<L1TPhase2CorrelatorOffline::MultiCollection,RecoVars>> reco_;
   float bZ_;
-  //TTree *tree_;
 
   // Histograms
   MonitorElement* h_L1PF_pt_;
@@ -459,75 +430,58 @@ private:
   MonitorElement* h_L1PF_electron_resolution_0p2_pt_endcap_;
   MonitorElement* h_L1PF_electron_resolution_0p2_pt_ecnotk_;
   MonitorElement* h_L1PF_electron_resolution_0p2_pt_hf_;
-  //MonitorElement* h_L1PF_electron_resolution_0p2_eta_;
   MonitorElement* h_L1Puppi_electron_resolution_0p2_pt_barrel_;
   MonitorElement* h_L1Puppi_electron_resolution_0p2_pt_endcap_;
   MonitorElement* h_L1Puppi_electron_resolution_0p2_pt_ecnotk_;
   MonitorElement* h_L1Puppi_electron_resolution_0p2_pt_hf_;
-  //MonitorElement* h_L1Puppi_electron_resolution_0p2_eta_;
   MonitorElement* h_L1PF_electron_resolution_best_pt_barrel_;
   MonitorElement* h_L1PF_electron_resolution_best_pt_endcap_;
   MonitorElement* h_L1PF_electron_resolution_best_pt_ecnotk_;
   MonitorElement* h_L1PF_electron_resolution_best_pt_hf_;
-  //MonitorElement* h_L1PF_electron_resolution_best_eta_;
   MonitorElement* h_L1Puppi_electron_resolution_best_pt_barrel_;
   MonitorElement* h_L1Puppi_electron_resolution_best_pt_endcap_;
   MonitorElement* h_L1Puppi_electron_resolution_best_pt_ecnotk_;
   MonitorElement* h_L1Puppi_electron_resolution_best_pt_hf_;
-  //MonitorElement* h_L1Puppi_electron_resolution_best_eta_;
   MonitorElement* h_L1PF_pizero_resolution_0p2_pt_barrel_;
   MonitorElement* h_L1PF_pizero_resolution_0p2_pt_endcap_;
   MonitorElement* h_L1PF_pizero_resolution_0p2_pt_ecnotk_;
   MonitorElement* h_L1PF_pizero_resolution_0p2_pt_hf_;
-  //MonitorElement* h_L1PF_pizero_resolution_0p2_eta_;
   MonitorElement* h_L1Puppi_pizero_resolution_0p2_pt_barrel_;
   MonitorElement* h_L1Puppi_pizero_resolution_0p2_pt_endcap_;
   MonitorElement* h_L1Puppi_pizero_resolution_0p2_pt_ecnotk_;
   MonitorElement* h_L1Puppi_pizero_resolution_0p2_pt_hf_;
-  //MonitorElement* h_L1Puppi_pizero_resolution_0p2_eta_;
   MonitorElement* h_L1PF_pizero_resolution_best_pt_barrel_;
   MonitorElement* h_L1PF_pizero_resolution_best_pt_endcap_;
   MonitorElement* h_L1PF_pizero_resolution_best_pt_ecnotk_;
   MonitorElement* h_L1PF_pizero_resolution_best_pt_hf_;
-  //MonitorElement* h_L1PF_pizero_resolution_best_eta_;
   MonitorElement* h_L1Puppi_pizero_resolution_best_pt_barrel_;
   MonitorElement* h_L1Puppi_pizero_resolution_best_pt_endcap_;
   MonitorElement* h_L1Puppi_pizero_resolution_best_pt_ecnotk_;
   MonitorElement* h_L1Puppi_pizero_resolution_best_pt_hf_;
-  //MonitorElement* h_L1Puppi_pizero_resolution_best_eta_;
   MonitorElement* h_L1PF_pion_resolution_0p2_pt_barrel_;
   MonitorElement* h_L1PF_pion_resolution_0p2_pt_endcap_;
   MonitorElement* h_L1PF_pion_resolution_0p2_pt_ecnotk_;
   MonitorElement* h_L1PF_pion_resolution_0p2_pt_hf_;
-  //MonitorElement* h_L1PF_pion_resolution_0p2_eta_;
   MonitorElement* h_L1Puppi_pion_resolution_0p2_pt_barrel_;
   MonitorElement* h_L1Puppi_pion_resolution_0p2_pt_endcap_;
   MonitorElement* h_L1Puppi_pion_resolution_0p2_pt_ecnotk_;
   MonitorElement* h_L1Puppi_pion_resolution_0p2_pt_hf_;
-  //MonitorElement* h_L1Puppi_pion_resolution_0p2_eta_;
   MonitorElement* h_L1PF_pion_resolution_best_pt_barrel_;
   MonitorElement* h_L1PF_pion_resolution_best_pt_endcap_;
   MonitorElement* h_L1PF_pion_resolution_best_pt_ecnotk_;
   MonitorElement* h_L1PF_pion_resolution_best_pt_hf_;
-  //MonitorElement* h_L1PF_pion_resolution_best_eta_;
   MonitorElement* h_L1Puppi_pion_resolution_best_pt_barrel_;
   MonitorElement* h_L1Puppi_pion_resolution_best_pt_endcap_;
   MonitorElement* h_L1Puppi_pion_resolution_best_pt_ecnotk_;
   MonitorElement* h_L1Puppi_pion_resolution_best_pt_hf_;
-  //MonitorElement* h_L1Puppi_pion_resolution_best_eta_;
   MonitorElement* h_L1PF_jet_resolution_pt_barrel_;
   MonitorElement* h_L1PF_jet_resolution_pt_endcap_;
   MonitorElement* h_L1PF_jet_resolution_pt_ecnotk_;
   MonitorElement* h_L1PF_jet_resolution_pt_hf_;
-  //MonitorElement* h_L1PF_jet_resolution_eta_;
   MonitorElement* h_L1Puppi_jet_resolution_pt_barrel_;
   MonitorElement* h_L1Puppi_jet_resolution_pt_endcap_;
   MonitorElement* h_L1Puppi_jet_resolution_pt_ecnotk_;
   MonitorElement* h_L1Puppi_jet_resolution_pt_hf_;
-  //MonitorElement* h_L1Puppi_jet_resolution_eta_;
-
-  //MonitorElement* h_L1PF_pt_vs_eta_;
-  //MonitorElement* h_L1Puppi_pt_vs_eta_;
 };
 
 #endif
