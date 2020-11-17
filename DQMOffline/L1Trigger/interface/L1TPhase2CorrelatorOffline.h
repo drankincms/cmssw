@@ -9,7 +9,6 @@
 #include "DataFormats/Math/interface/deltaR.h"
 #include "DataFormats/L1TParticleFlow/interface/PFCandidate.h"
 
-
 // FWCore
 #include "FWCore/Common/interface/Provenance.h"
 #include "FWCore/Framework/interface/Frameworkfwd.h"
@@ -58,7 +57,6 @@ public:
 
   static const std::map<std::string, unsigned int> PlotConfigNames;
 
-
 protected:
   void dqmBeginRun(const edm::Run& run, const edm::EventSetup& iSetup) override;
   void bookHistograms(DQMStore::IBooker&, edm::Run const&, edm::EventSetup const&) override;
@@ -87,99 +85,113 @@ private:
   struct SimpleObject {
     float pt, eta, phi;
     SimpleObject(float apt, float aneta, float aphi) : pt(apt), eta(aneta), phi(aphi) {}
-    bool operator<(const SimpleObject &other) const { return eta < other.eta; }
-    bool operator<(const float &other) const { return eta < other; }
+    bool operator<(const SimpleObject& other) const { return eta < other.eta; }
+    bool operator<(const float& other) const { return eta < other; }
   };
   class MultiCollection {
-    public:
-      MultiCollection(const edm::ParameterSet &iConfig, const std::string &name, edm::ConsumesCollector && coll) :
-        name_(name),prop_(false),sel_("")
-      {
-        if      (name.find("Ecal") != std::string::npos) prop_ = true;
-        else if (name.find("Hcal") != std::string::npos) prop_ = true;
-        else if (name.find("Calo") != std::string::npos) prop_ = true;
-        const std::vector<edm::InputTag> & tags = iConfig.getParameter< std::vector<edm::InputTag>>(name);
-        for (const auto & tag : tags) tokens_.push_back(coll.consumes<reco::CandidateView>(tag));
-        if (iConfig.existsAs<std::string>(name+"_sel")) {
-          sel_ = StringCutObjectSelector<reco::Candidate>(iConfig.getParameter<std::string>(name+"_sel"), true);
+  public:
+    MultiCollection(const edm::ParameterSet& iConfig, const std::string& name, edm::ConsumesCollector&& coll)
+        : name_(name), prop_(false), sel_("") {
+      if (name.find("Ecal") != std::string::npos)
+        prop_ = true;
+      else if (name.find("Hcal") != std::string::npos)
+        prop_ = true;
+      else if (name.find("Calo") != std::string::npos)
+        prop_ = true;
+      const std::vector<edm::InputTag>& tags = iConfig.getParameter<std::vector<edm::InputTag>>(name);
+      for (const auto& tag : tags)
+        tokens_.push_back(coll.consumes<reco::CandidateView>(tag));
+      if (iConfig.existsAs<std::string>(name + "_sel")) {
+        sel_ = StringCutObjectSelector<reco::Candidate>(iConfig.getParameter<std::string>(name + "_sel"), true);
+      }
+    }
+    const std::string& name() const { return name_; }
+    bool prop() const { return prop_; }
+    void get(const edm::Event& iEvent) {
+      edm::Handle<reco::CandidateView> handle;
+      for (const auto& token : tokens_) {
+        iEvent.getByToken(token, handle);
+        for (const reco::Candidate& c : *handle) {
+          if (sel_(c))
+            objects_.emplace_back(c.pt(), c.eta(), c.phi());
         }
       }
-      const std::string & name() const { return name_; }
-      bool  prop() const { return prop_; }
-      void get(const edm::Event &iEvent) {
-        edm::Handle<reco::CandidateView> handle;
-        for (const auto & token : tokens_) {
-          iEvent.getByToken(token, handle);
-          for (const reco::Candidate & c : *handle) {
-            if (sel_(c)) objects_.emplace_back(c.pt(), c.eta(), c.phi());
-          }
-        }
-        std::sort(objects_.begin(), objects_.end());
-      }    
-      const std::vector<SimpleObject> & objects() const { return objects_; }
-      void clear() { objects_.clear(); }
-    private:
-      std::string name_;
-      bool prop_;
-      std::vector<edm::EDGetTokenT<reco::CandidateView>> tokens_;
-      StringCutObjectSelector<reco::Candidate> sel_;
-      std::vector<SimpleObject> objects_;
+      std::sort(objects_.begin(), objects_.end());
+    }
+    const std::vector<SimpleObject>& objects() const { return objects_; }
+    void clear() { objects_.clear(); }
+
+  private:
+    std::string name_;
+    bool prop_;
+    std::vector<edm::EDGetTokenT<reco::CandidateView>> tokens_;
+    StringCutObjectSelector<reco::Candidate> sel_;
+    std::vector<SimpleObject> objects_;
   };
   class InCone {
-    public:
-      InCone(const std::vector<SimpleObject> & objects, float eta, float phi, float dr) {
-        auto first = std::lower_bound(objects.begin(), objects.end(), eta-dr-0.01f); // small offset to avoid dealing with ==
-        auto end   = std::lower_bound(objects.begin(), objects.end(), eta+dr+0.01f);
-        float dr2 = dr*dr;
-        sum04 = 0;
-        for (auto it = first; it < end; ++it) {
-          float mydr2 = ::deltaR2(eta,phi, it->eta,it->phi);
-          if (mydr2 < dr2) ptdr2.emplace_back(it->pt, mydr2);
-          if (mydr2 < 0.16f) sum04 += it->pt;
-        }
+  public:
+    InCone(const std::vector<SimpleObject>& objects, float eta, float phi, float dr) {
+      auto first =
+          std::lower_bound(objects.begin(), objects.end(), eta - dr - 0.01f);  // small offset to avoid dealing with ==
+      auto end = std::lower_bound(objects.begin(), objects.end(), eta + dr + 0.01f);
+      float dr2 = dr * dr;
+      sum04 = 0;
+      for (auto it = first; it < end; ++it) {
+        float mydr2 = ::deltaR2(eta, phi, it->eta, it->phi);
+        if (mydr2 < dr2)
+          ptdr2.emplace_back(it->pt, mydr2);
+        if (mydr2 < 0.16f)
+          sum04 += it->pt;
       }
-      float sum(float dr=0.4) const { 
-        if (dr == 0.4f) return sum04;
-        float dr2 = dr*dr;
-        float mysum = 0;
-        for (const auto & p : ptdr2) {
-          if (p.second < dr2) mysum += p.first;
-        }
-        return mysum;
+    }
+    float sum(float dr = 0.4) const {
+      if (dr == 0.4f)
+        return sum04;
+      float dr2 = dr * dr;
+      float mysum = 0;
+      for (const auto& p : ptdr2) {
+        if (p.second < dr2)
+          mysum += p.first;
       }
-      int number(float dr, float threshold) const { 
-        float dr2 = dr*dr, absthreshold = sum()*threshold;
-        int mysum = 0;
-        for (const auto & p : ptdr2) {
-          if (p.second < dr2 && p.first > absthreshold) mysum++;
-        }
-        return mysum;
+      return mysum;
+    }
+    int number(float dr, float threshold) const {
+      float dr2 = dr * dr, absthreshold = sum() * threshold;
+      int mysum = 0;
+      for (const auto& p : ptdr2) {
+        if (p.second < dr2 && p.first > absthreshold)
+          mysum++;
       }
-      float mindr(float threshold) const {
-        float best = 9999, absthreshold = sum()*threshold;
-        for (const auto & p : ptdr2) {
-          if (p.second < best && p.first > absthreshold) best = p.second;
-        }
-        return std::sqrt(best);
+      return mysum;
+    }
+    float mindr(float threshold) const {
+      float best = 9999, absthreshold = sum() * threshold;
+      for (const auto& p : ptdr2) {
+        if (p.second < best && p.first > absthreshold)
+          best = p.second;
       }
-      float nearest() const {
-        std::pair<float,float> best(0,9999);
-        for (const auto & p : ptdr2) {
-          if (p.second < best.second) best = p;
-        }
-        return best.first;
+      return std::sqrt(best);
+    }
+    float nearest() const {
+      std::pair<float, float> best(0, 9999);
+      for (const auto& p : ptdr2) {
+        if (p.second < best.second)
+          best = p;
       }
-      float max(float dr=0.4) const {
-        float best = 0, dr2 = dr*dr;
-        for (const auto & p : ptdr2) {
-          if (p.first > best && p.second < dr2) best = p.first;
-        }
-        return best;
+      return best.first;
+    }
+    float max(float dr = 0.4) const {
+      float best = 0, dr2 = dr * dr;
+      for (const auto& p : ptdr2) {
+        if (p.first > best && p.second < dr2)
+          best = p.first;
       }
+      return best;
+    }
 
-    private:
-      std::vector<std::pair<float,float>> ptdr2;
-      float sum04;
+  private:
+    std::vector<std::pair<float, float>> ptdr2;
+    float sum04;
   };
 
   // variables from config file
@@ -196,8 +208,9 @@ private:
   // config params
   struct McVars {
     float pt, pt02, eta, phi, iso02, iso04, iso08;
-    int charge; float caloeta, calophi;
-    int   id;
+    int charge;
+    float caloeta, calophi;
+    int id;
     /*void makeBranches(TTree *tree) {
       tree->Branch("mc_pt", &pt, "mc_pt/F");
       tree->Branch("mc_pt02", &pt02, "mc_pt02/F");
@@ -211,21 +224,27 @@ private:
       tree->Branch("mc_caloeta", &caloeta, "mc_caloeta/F");
       tree->Branch("mc_calophi", &calophi, "mc_calophi/F");
     }*/
-    void fillP4(const reco::Candidate &c) {
-      pt = c.pt(); eta = c.eta(); phi = c.phi();
-      caloeta = eta; calophi = phi; charge = 0;
+    void fillP4(const reco::Candidate& c) {
+      pt = c.pt();
+      eta = c.eta();
+      phi = c.phi();
+      caloeta = eta;
+      calophi = phi;
+      charge = 0;
     }
-    void fillPropagated(const reco::Candidate &c, float bz) {
+    void fillPropagated(const reco::Candidate& c, float bz) {
       if (c.charge() != 0) {
-        math::XYZTLorentzVector vertex(c.vx(),c.vy(),c.vz(),0.);
-        auto caloetaphi = l1tpf::propagateToCalo(c.p4(),vertex,c.charge(),bz);
-        caloeta = caloetaphi.first; calophi = caloetaphi.second;
+        math::XYZTLorentzVector vertex(c.vx(), c.vy(), c.vz(), 0.);
+        auto caloetaphi = l1tpf::propagateToCalo(c.p4(), vertex, c.charge(), bz);
+        caloeta = caloetaphi.first;
+        calophi = caloetaphi.second;
       }
     }
 
   } mc_;
   struct RecoVars {
-    float pt, pt02, pt08, ptbest, pthighest, mindr025; int n025, n010;
+    float pt, pt02, pt08, ptbest, pthighest, mindr025;
+    int n025, n010;
     /*void makeBranches(const std::string &prefix, TTree *tree) {
       tree->Branch((prefix+"_pt").c_str(),   &pt,   (prefix+"_pt/F").c_str());
       tree->Branch((prefix+"_pt02").c_str(), &pt02, (prefix+"_pt02/F").c_str());
@@ -236,14 +255,14 @@ private:
       tree->Branch((prefix+"_n025").c_str(), &n025, (prefix+"_n025/I").c_str());
       tree->Branch((prefix+"_n010").c_str(), &n010, (prefix+"_n010/I").c_str());
     }*/
-    void fill(const std::vector<SimpleObject> & objects, float eta, float phi) {
+    void fill(const std::vector<SimpleObject>& objects, float eta, float phi) {
       InCone incone(objects, eta, phi, 0.8);
       pt = incone.sum();
       pt02 = incone.sum(0.2);
       pt08 = incone.sum(0.8);
       ptbest = incone.nearest();
       pthighest = incone.max();
-      mindr025 =  incone.mindr(0.25);
+      mindr025 = incone.mindr(0.25);
       n025 = incone.number(0.2, 0.25);
       n010 = incone.number(0.2, 0.10);
     }
@@ -258,7 +277,7 @@ private:
       n010 = -1;
     }
   };
-  std::vector<std::pair<MultiCollection,RecoVars>> reco_;
+  std::vector<std::pair<MultiCollection, RecoVars>> reco_;
   //std::vector<std::pair<L1TPhase2CorrelatorOffline::MultiCollection,RecoVars>> reco_;
   float bZ_;
   //TTree *tree_;
@@ -509,7 +528,6 @@ private:
 
   //MonitorElement* h_L1PF_pt_vs_eta_;
   //MonitorElement* h_L1Puppi_pt_vs_eta_;
-
 };
 
 #endif
