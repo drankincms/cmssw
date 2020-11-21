@@ -218,16 +218,16 @@ void L1TPhase2CorrelatorOffline::analyze(edm::Event const& e, edm::EventSetup co
     return;
   }
 
-  for (const reco::GenJet& j : *genjets) {
+  for (const reco::GenJet& j1 : *genjets) {
     bool ok = true;
     const reco::Candidate* match = nullptr;
-    for (const reco::GenParticle* p : prompts) {
-      if (::deltaR2(*p, j) < 0.16f) {
+    for (const reco::GenParticle* gp : prompts) {
+      if (::deltaR2(*gp, j1) < 0.16f) {
         if (match != nullptr) {
           ok = false;
           break;
         } else {
-          match = p;
+          match = gp;
         }
       }
     }
@@ -235,13 +235,13 @@ void L1TPhase2CorrelatorOffline::analyze(edm::Event const& e, edm::EventSetup co
       continue;
     if (!match) {
       // look for a tau
-      for (const reco::GenParticle* p : taus) {
-        if (::deltaR2(*p, j) < 0.16f) {
+      for (const reco::GenParticle* gp : taus) {
+        if (::deltaR2(*gp, j1) < 0.16f) {
           if (match != nullptr) {
             ok = false;
             break;
           } else {
-            match = p;
+            match = gp;
           }
         }
       }
@@ -271,27 +271,27 @@ void L1TPhase2CorrelatorOffline::analyze(edm::Event const& e, edm::EventSetup co
         mc_.fillPropagated(*match, bZ_);
       }
       mc_.id = std::abs(match->pdgId());
-      mc_.iso04 = j.pt() / mc_.pt - 1;
+      mc_.iso04 = j1.pt() / mc_.pt - 1;
       mc_.iso02 = 0;
-      for (const auto& dptr : j.daughterPtrVector()) {
+      for (const auto& dptr : j1.daughterPtrVector()) {
         if (::deltaR2(*dptr, *match) < 0.04f) {
           mc_.iso02 += dptr->pt();
         }
       }
       mc_.iso02 = mc_.iso02 / mc_.pt - 1;
     } else {
-      if (j.pt() < 20)
+      if (j1.pt() < 20)
         continue;
-      mc_.fillP4(j);
+      mc_.fillP4(j1);
       mc_.id = 0;
       mc_.iso02 = 0;
       mc_.iso04 = 0;
     }
     mc_.iso08 = mc_.iso04;
     for (const reco::GenJet& j2 : *genjets) {
-      if (&j2 == &j)
+      if (&j2 == &j1)
         continue;
-      if (::deltaR2(j, j2) < 0.64f)
+      if (::deltaR2(j1, j2) < 0.64f)
         mc_.iso08 += j2.pt() / mc_.pt;
     }
     for (auto& recopair : reco_) {
@@ -2201,12 +2201,12 @@ void L1TPhase2CorrelatorOffline::computeResponseResolution() {
 }
 
 void L1TPhase2CorrelatorOffline::medianResponse(MonitorElement* in2D, MonitorElement* response) {
-  auto h = in2D->getTH2F();
+  auto hbase = in2D->getTH2F();
   auto hresp = response->getTH1F();
-  if (h != nullptr && hresp != nullptr) {
-    if (h->GetNbinsX() == hresp->GetNbinsX() && h->GetNbinsX()) {
-      auto med = h->QuantilesX(0.5, "_qx");
-      for (int ib = 0; ib < h->GetNbinsX() + 1; ib++) {
+  if (hbase != nullptr && hresp != nullptr) {
+    if (hbase->GetNbinsX() == hresp->GetNbinsX() && hbase->GetNbinsX()) {
+      auto med = hbase->QuantilesX(0.5, "_qx");
+      for (int ib = 0; ib < hbase->GetNbinsX() + 1; ib++) {
         hresp->SetBinContent(ib, med->GetBinContent(ib));
       }
     }
@@ -2216,38 +2216,38 @@ void L1TPhase2CorrelatorOffline::medianResponse(MonitorElement* in2D, MonitorEle
 void L1TPhase2CorrelatorOffline::medianResponseCorrResolution(MonitorElement* in2D,
                                                               MonitorElement* response,
                                                               MonitorElement* resolution) {
-  auto h = in2D->getTH2F();
+  auto hbase = in2D->getTH2F();
   auto hresp = response->getTH1F();
   auto hresol = resolution->getTH1F();
-  if (h != nullptr && hresp != nullptr && hresol != nullptr) {
-    if (h->GetNbinsX() == hresp->GetNbinsX() && h->GetNbinsX() == hresol->GetNbinsX()) {
-      auto med = h->QuantilesX(0.5, "_qx");
-      TGraph* ptrecgen = new TGraph(h->GetNbinsX());
-      for (int ib = 1; ib < h->GetNbinsX() + 1; ib++) {
+  if (hbase != nullptr && hresp != nullptr && hresol != nullptr) {
+    if (hbase->GetNbinsX() == hresp->GetNbinsX() && hbase->GetNbinsX() == hresol->GetNbinsX()) {
+      auto med = hbase->QuantilesX(0.5, "_qx");
+      TGraph* ptrecgen = new TGraph(hbase->GetNbinsX());
+      for (int ib = 1; ib < hbase->GetNbinsX() + 1; ib++) {
         float corr = med->GetBinContent(ib);
-        float xval = h->GetXaxis()->GetBinCenter(ib);
+        float xval = hbase->GetXaxis()->GetBinCenter(ib);
         ptrecgen->SetPoint(ib - 1, xval * corr, xval);
         hresp->SetBinContent(ib, corr);
       }
       delete med;
       ptrecgen->Sort();
-      TH2F* c = new TH2F(*h);
-      c->Reset("ICE");
-      for (int ibx = 1; ibx < c->GetNbinsX() + 1; ibx++) {
-        float xval = h->GetXaxis()->GetBinCenter(ibx);
-        for (int iby = 1; iby < c->GetNbinsY() + 1; iby++) {
-          float yval = h->GetYaxis()->GetBinCenter(iby);
+      TH2F* ch = new TH2F(*hbase);
+      ch->Reset("ICE");
+      for (int ibx = 1; ibx < ch->GetNbinsX() + 1; ibx++) {
+        float xval = hbase->GetXaxis()->GetBinCenter(ibx);
+        for (int iby = 1; iby < ch->GetNbinsY() + 1; iby++) {
+          float yval = hbase->GetYaxis()->GetBinCenter(iby);
           float newyval = ptrecgen->Eval(yval * xval) / xval;
-          int ycb = c->FindBin(xval, newyval);
-          c->SetBinContent(ycb, c->GetBinContent(ycb) + h->GetBinContent(ibx, iby));
+          int ycb = ch->FindBin(xval, newyval);
+          ch->SetBinContent(ycb, ch->GetBinContent(ycb) + hbase->GetBinContent(ibx, iby));
         }
       }
       delete ptrecgen;
-      auto qc = c->QuantilesX(0.5, "_qc");
-      auto qhi = c->QuantilesX(0.84, "_qhi");
-      auto qlo = c->QuantilesX(0.16, "_qlo");
-      delete c;
-      for (int ibx = 1; ibx < h->GetNbinsX() + 1; ibx++) {
+      auto qc = ch->QuantilesX(0.5, "_qc");
+      auto qhi = ch->QuantilesX(0.84, "_qhi");
+      auto qlo = ch->QuantilesX(0.16, "_qlo");
+      delete ch;
+      for (int ibx = 1; ibx < hbase->GetNbinsX() + 1; ibx++) {
         hresol->SetBinContent(
             ibx, qc->GetBinContent(ibx) > 0.2 ? (qhi->GetBinContent(ibx) - qlo->GetBinContent(ibx)) / 2. : 0.);
       }

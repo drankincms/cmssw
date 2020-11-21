@@ -145,42 +145,42 @@ private:
         return sum04_;
       float dr2 = dr * dr;
       float mysum = 0;
-      for (const auto& p : ptdr2_) {
-        if (p.second < dr2)
-          mysum += p.first;
+      for (const auto& part : ptdr2_) {
+        if (part.second < dr2)
+          mysum += part.first;
       }
       return mysum;
     }
     int number(float dr, float threshold) const {
       float dr2 = dr * dr, absthreshold = sum() * threshold;
       int mysum = 0;
-      for (const auto& p : ptdr2_) {
-        if (p.second < dr2 && p.first > absthreshold)
+      for (const auto& part : ptdr2_) {
+        if (part.second < dr2 && part.first > absthreshold)
           mysum++;
       }
       return mysum;
     }
     float mindr(float threshold) const {
       float best = 9999, absthreshold = sum() * threshold;
-      for (const auto& p : ptdr2_) {
-        if (p.second < best && p.first > absthreshold)
-          best = p.second;
+      for (const auto& part : ptdr2_) {
+        if (part.second < best && part.first > absthreshold)
+          best = part.second;
       }
       return std::sqrt(best);
     }
     float nearest() const {
       std::pair<float, float> best(0, 9999);
-      for (const auto& p : ptdr2_) {
-        if (p.second < best.second)
-          best = p;
+      for (const auto& part : ptdr2_) {
+        if (part.second < best.second)
+          best = part;
       }
       return best.first;
     }
     float max(float dr = 0.4) const {
       float best = 0, dr2 = dr * dr;
-      for (const auto& p : ptdr2_) {
-        if (p.first > best && p.second < dr2)
-          best = p.first;
+      for (const auto& part : ptdr2_) {
+        if (part.first > best && part.second < dr2)
+          best = part.first;
       }
       return best;
     }
@@ -207,18 +207,18 @@ private:
     int charge;
     float caloeta, calophi;
     int id;
-    void fillP4(const reco::Candidate& c) {
-      pt = c.pt();
-      eta = c.eta();
-      phi = c.phi();
+    void fillP4(const reco::Candidate& cand) {
+      pt = cand.pt();
+      eta = cand.eta();
+      phi = cand.phi();
       caloeta = eta;
       calophi = phi;
       charge = 0;
     }
-    void fillPropagated(const reco::Candidate& c, float bz) {
-      if (c.charge() != 0) {
-        math::XYZTLorentzVector vertex(c.vx(), c.vy(), c.vz(), 0.);
-        auto caloetaphi = l1tpf::propagateToCalo(c.p4(), vertex, c.charge(), bz);
+    void fillPropagated(const reco::Candidate& cand, float bz) {
+      if (cand.charge() != 0) {
+        math::XYZTLorentzVector vertex(cand.vx(), cand.vy(), cand.vz(), 0.);
+        auto caloetaphi = l1tpf::propagateToCalo(cand.p4(), vertex, cand.charge(), bz);
         caloeta = caloetaphi.first;
         calophi = caloetaphi.second;
       }
